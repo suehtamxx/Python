@@ -1,0 +1,1 @@
+print('ola, mundo. eu falo do python')
