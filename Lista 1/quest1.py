@@ -1,6 +1,7 @@
 forma = 0
-while forma != 4:
+while forma != 4:#loop "infinito" ate o 4 ser digitado
     forma = int(input('1 - Triangulo\n2 - Quadrado\n3 - Circulo\n4 - Sair\n'))
+    #aninhamento de if com os casos
     if forma == 1:
         a = float(input('Digite a base do triangulo:'))
         b = float(input('Digite a altura do triangulo:'))
@@ -17,4 +18,4 @@ while forma != 4:
     elif forma == 4:
         print('Tchau...')
     else:
-        print('Valor invalido.')
+        print('Valor invalido.') #caso em que o usuario nao digite um valor de 1 a 4
