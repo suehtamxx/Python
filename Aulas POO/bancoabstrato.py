@@ -141,8 +141,3 @@ m = ManipuladorDeTriubutaveis()
 total = m.calcula_impostos(lista_tributos)
 print(total)
 
-
-
-
-#3 questao
-#nao posso instanciar uma classe conta sem que o metodo atualiza seja implementado
