@@ -13,7 +13,7 @@ def adicionar_telefone(telefones):
     nome = input('Digite o nome:\n')
     if nome in telefones:
         telefone = int(input('Digite o telefone:\n'))
-        telefones[nome] ={'telefone': telefone}
+        telefones[nome].append(telefone)
     else:
         a = int(input("Esse nome nao existe na agenda, deseja adicionar?\n1 - Sim\n2 - Nao\n"))
         if a == 1:
