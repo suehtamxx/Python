@@ -1,4 +1,3 @@
-@ -1,56 +0,0 @@
 import time
 #tamanho do tabulerio
 x = 8
