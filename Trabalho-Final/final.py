@@ -15,10 +15,6 @@ class Vendavel(abc.ABC): # Interface para Jogos (que podem ser vendidos)
     def calcular_preco_final(self):
         pass
 
-    @abc.abstractmethod
-    def obter_info_venda(self):
-        pass
-
 # --- Classes de Jogo ---
 class Jogo():
     def __init__(self, nome, plataforma, preco):
@@ -60,14 +56,10 @@ class Jogo():
     def calcular_preco_final(self): 
         return self.preco
 
-    def obter_info_venda(self): 
-        return f"Título: {self.nome}, Preço: R${self.calcular_preco_final():.2f}"
-
 class JogoDigital(Jogo): 
     def __init__(self, nome, plataforma, preco, tamanho_gb):
         super().__init__(nome, plataforma, preco)
         self._tamanho_gb = tamanho_gb
-        self._chaves_disponiveis = 100 # Simula um estoque grande de chaves digitais
 
     @property
     def tamanho_gb(self):
@@ -75,24 +67,6 @@ class JogoDigital(Jogo):
     @tamanho_gb.setter
     def tamanho_gb(self, value):
         self._tamanho_gb = value
-
-    @property
-    def chaves_disponiveis(self):
-        return self._chaves_disponiveis
-    @chaves_disponiveis.setter
-    def chaves_disponiveis(self, value):
-        self._chaves_disponiveis = value
-
-    def entregar_chave(self):
-        if self.chaves_disponiveis <= 0:
-            print(f"Erro: Não há chaves de ativação disponíveis para {self.nome}.")
-            return False
-        self.chaves_disponiveis -= 1
-        print(f"Chave digital de {self.nome} entregue.")
-        return True
-
-    def obter_info_venda(self): # Sobrescreve para incluir info digital
-        return f"{super().obter_info_venda()} (Digital, {self.tamanho_gb}GB, Estoque: {self.chaves_disponiveis} chaves)"
 
 class JogoFisico(Jogo):
     def __init__(self, nome, plataforma, preco):
@@ -105,9 +79,6 @@ class JogoFisico(Jogo):
         self.estoque_unidades -= 1
         print(f"Estoque físico de {self.nome} decrementado.")
         return True
-
-    def obter_info_venda(self): # Sobrescreve para incluir info física
-        return f"{super().obter_info_venda()} (Físico, Estoque: {self.estoque_unidades} unidades)"
 
 # --- Classes de Pessoa e Funções ---
 class Pessoa(): 
@@ -153,7 +124,7 @@ class Pessoa():
             return False
 
     def imprimir_perfil(self):
-        print(f'--- Perfil de {self.nome} ---\nEmail: {self.email} ---\n ID: {self.id_pessoa}\n')
+        print(f'--- Perfil de {self.nome} ---\nEmail: {self.email}\nID: {self.id_pessoa}\n')
 
 
 class Cliente(Pessoa): 
@@ -314,7 +285,7 @@ class Loja():
         self._funcionarios = value
         
     def imprimir_jogos_estoque(self):
-        if not self.jogos_estoque:
+        if self.jogos_estoque == {}:
             print('Nenhum jogo cadastrado no estoque da loja.\n')
             return
         print('\n--- Jogos em Estoque na Loja ---')
@@ -361,7 +332,27 @@ class Loja():
             print(f"Loja vendeu {quantidade} cópia(s) de '{jogo.nome}' para {cliente.nome}. Saldo da Loja: R${self.saldo:.2f}.\n")
             self._historico.append((jogo.nome, quantidade, cliente.nome))
             return True
-        return False 
+        return False
+    def adicionar_jogo(self):
+        print("\nAdicionando jogo na loja\n")
+        nome_jogo = input("Nome do jogo: ")
+        plataforma = input("Plataforma: ")
+        preco = float(input("Preço de custo para a loja: "))
+        tipo_jogo = input("Tipo (digital/fisico): ")
+        qtd = int(input("Quantidade: "))
+
+        novo_jogo = None
+        if tipo_jogo.lower() == "digital":
+            tamanho_gb = float(input("Tamanho em GB: "))
+            novo_jogo = JogoDigital(nome_jogo, plataforma, preco, tamanho_gb)
+        elif tipo_jogo.lower() == "fisico":
+            novo_jogo = JogoFisico(nome_jogo, plataforma, preco)
+        else:
+            print("Tipo inválido.")
+        if novo_jogo:
+            return novo_jogo,qtd
+        else:
+            return None
     def adicionar_funcionario(self, funcionario):
         self.funcionarios.append(funcionario)
     def imprimir_historico(self):
@@ -388,7 +379,15 @@ clientes = []
 funcionarios = []
 lojas_registradas = []
 
-
+def verificar_nome_e_cargo(string):
+    if string.isalpha() == False:
+        return False
+    return True
+def verificar_salario(salario):
+    if salario.isnumeric() == False:
+        return False
+    return True
+        
 def exibir_menu_principal():
     print("\n--- Menu Principal da Loja de Jogos ---")
     print("1. Cadastrar Cliente")
@@ -398,7 +397,6 @@ def exibir_menu_principal():
     print("5. Entrar como Cliente")
     print("6. Entrar como Funcionário")
     print("7. Entrar como Gerente")
-    print("8. Menu da Loja (Admin)")
     print("0. Sair")
     return input("Escolha uma opção: ")
 
@@ -411,15 +409,18 @@ if __name__ == "__main__":
         if opcao_menu == '1': #Cliente
             print("\n--- Cadastro de Cliente ---")
             nome = input("Nome: ")
-            email = input("E-mail: ")
-            senha = input("Senha: ")
-            if clientes == []:
-                id_cliente = 1
+            if verificar_nome_e_cargo(nome):
+                email = input("E-mail: ")
+                senha = input("Senha: ")
+                id_cliente = int(input("ID: "))
+                if any(clientes.id_pessoa == id_cliente for clientes in clientes):
+                    print('Erro: ID/Cliente ja cadastrado.')
+                else:
+                    novo_cliente = Cliente(id_cliente, nome, email, senha)
+                    clientes.append(novo_cliente)
+                    print("Cliente cadastrado com sucesso!")
             else:
-                id_cliente = len(clientes) + 1
-            novo_cliente = Cliente(id_cliente, nome, email, senha)
-            clientes.append(novo_cliente)
-            print("Cliente cadastrado com sucesso!")
+                print('Erro: Nome deve ser uma string.')
 
         elif opcao_menu == '2': #Funcionario
             if lojas_registradas == []:
@@ -427,134 +428,176 @@ if __name__ == "__main__":
             else:
                 print("\n--- Cadastro de Funcionário ---")
                 nome = input("Nome: ")
-                email = input("E-mail: ")
-                senha = input("Senha: ")
-                cargo = input("Cargo: ")
-                salario = float(input("Salário: "))
-                if funcionarios == []:
-                    id_funcionario = 1
-                else:
-                    id_funcionario = len(funcionarios) + 1
-                    
-                for loja in lojas_registradas:
-                    print(f"Nome: {loja.nome}, ID: {loja.id_loja}")
-                loja = int(input("Qual ID da loja que trabalha?\n"))
-                if not any(u for u in lojas_registradas if u.id_loja == loja):
-                    print('Loja nao encontrada')
-                else:
-                    loja = next((u for u in lojas_registradas if u.id_loja == loja), None)
-                    if isinstance(loja, Loja):
-                        novo_func = Funcionario(id_funcionario, nome, email, senha, cargo, salario, loja.nome)
-                        loja.adicionar_funcionario(novo_func)
+                if verificar_nome_e_cargo(nome):
+                    email = input("E-mail: ")
+                    senha = input("Senha: ")
+                    cargo = input("Cargo: ")
+                    if verificar_nome_e_cargo(cargo):
+                        salario_str = input("Salário: ")
+                        if verificar_salario(salario_str):
+                            salario = float(salario_str)
+                            
+                            id_funcionario = int(input("ID: "))
+                            if any(funcionarios.id_pessoa == id_funcionario for funcionarios in funcionarios):
+                                print('Erro: ID/Funcionario ja cadastrado.')
+                            else:     
+                                for loja_existente in lojas_registradas:
+                                    print(f"Nome: {loja_existente.nome}, ID: {loja_existente.id_loja}")
+                                    
+                                id_loja_selecionada = int(input("Qual ID da loja que trabalha?\n"))
+                                
+                                loja_encontrada = next((u for u in lojas_registradas if u.id_loja == id_loja_selecionada), None)
+
+                                if loja_encontrada is None: 
+                                    print('Loja não encontrada')
+                                else:
+                                    novo_func = Funcionario(id_funcionario, nome, email, senha, cargo, salario, loja_encontrada.nome)
+                                    loja_encontrada.adicionar_funcionario(novo_func)
+                                    funcionarios.append(novo_func)
+                                    print("Funcionário cadastrado com sucesso!")
+                        else:
+                            print('Erro: Salário deve ser um número.')
                     else:
-                        print('Loja nao encontrada')
-                    funcionarios.append(novo_func)
-                    print("Funcionário cadastrado com sucesso!")
-        elif opcao_menu == '3': #Gerente
+                        print('Erro: Cargo deve ser uma string.')
+                else:
+                    print('Erro: Nome deve ser uma string.')
+        elif opcao_menu == '3': # Gerente
             if lojas_registradas == []:
-                print("\nNenhuma loja cadastrada, não é possivel cadastrar um gerente.\n")
+                print("\nNenhuma loja cadastrada, não é possível cadastrar um gerente.\n")
             else:
                 print("\n--- Cadastro de Gerente ---")
                 nome = input("Nome: ")
-                email = input("E-mail: ")
-                senha = input("Senha: ")
-                salario = float(input("Salário: "))
-                if funcionarios == []:
-                    id_funcionario = 1
-                else:
-                    id_funcionario = len(funcionarios) + 1
-                for loja, i in lojas_registradas:
-                    print(f"Nome: {loja.nome}, ID: {i}")
-                loja = int(input("Qual o ID da loja que trabalha?\n"))
-                if not any(u for u in lojas_registradas if u.id_loja == loja):
-                    print('Loja nao encontrada')
-                else:
-                    loja = next((u for u in lojas_registradas if u.id_loja == loja), None)
-                    if isinstance(loja, Loja):
-                        novo_func = Gerente(id_funcionario, nome, email, senha,'Gerente', salario, loja.nome)
-                        loja.adicionar_funcionario(novo_func)
+                if verificar_nome_e_cargo(nome): 
+                    email = input("E-mail: ")
+                    senha = input("Senha: ")
+                    salario_str = input("Salário: ") 
+                    if verificar_salario(salario_str):
+                        salario = float(salario_str) 
+    
+                        id_gerente = int(input("ID: "))
+                        if any(func.id_pessoa == id_gerente for func in funcionarios):
+                            print('Erro: ID/Gerente já cadastrado.')
+                        else:
+                            for loja_existente in lojas_registradas:
+                                print(f"Nome: {loja_existente.nome}, ID: {loja_existente.id_loja}")
+                    
+                            id_loja_selecionada = int(input("Qual o ID da loja que trabalha?\n"))
+
+                            loja_encontrada = next((u for u in lojas_registradas if u.id_loja == id_loja_selecionada), None)
+
+                            if loja_encontrada is None: 
+                                print('Loja não encontrada')
+                            else:
+                                novo_gerente = Gerente(id_gerente, nome, email, senha, 'Gerente', salario, loja_encontrada.nome)
+                                loja_encontrada.adicionar_funcionario(novo_gerente) 
+                                funcionarios.append(novo_gerente) 
+                                print("Gerente cadastrado com sucesso!")
                     else:
-                        print('Loja nao encontrada')
-                    funcionarios.append(novo_func)
-                    print("Gerente cadastrado com sucesso!")
+                        print('Erro: Salário deve ser um número válido.')
+                else:
+                    print('Erro: Nome deve ser uma string válida.')
         elif opcao_menu == '4': #Loja
             print("\n--- Cadastro de Loja ---")
             nome = input("Nome da loja: ")
-            endereco = input("Endereço da loja: ")
-            telefone = input("Telefone da loja: ")
-            if lojas_registradas == []:
-                id_loja = 1
+            if verificar_nome_e_cargo(nome):
+                endereco = input("Endereço da loja: ")
+                telefone = input("Telefone da loja: ")
+                id_loja = int(input("ID da loja: "))
+                if any(lojas.id_loja == id_loja for lojas in lojas_registradas):
+                    print('Erro: ID/Loja ja cadastrado.')
+                else:     
+                    nova_loja = Loja(id_loja, nome, endereco, telefone)
+                    lojas_registradas.append(nova_loja)
+                    print("Loja cadastrada com sucesso!")
             else:
-                id_loja = len(lojas_registradas) + 1
-                
-            nova_loja = Loja(id_loja, nome, endereco, telefone)
-            lojas_registradas.append(nova_loja)
-            print("Loja cadastrada com sucesso!")
+                print('Erro: Nome deve ser uma string.')
         elif opcao_menu == '5':  # Cliente
-            if clientes == []:
-                print("\nNenhum cliente cadastrado, não é possivel entrar.\n")
+            if clientes == []: 
+                print("\nNenhum cliente cadastrado, não é possível entrar.\n")
             else:
                 email = input("Email do Cliente: ")
                 senha = input("Senha: ")
-                if not any(c for c in clientes if isinstance(c, Cliente) and c.email == email):
-                    print('Cliente nao encontrado')
-                else:
-                    cliente_logado = next((c for c in clientes if isinstance(c, Cliente) and c.email == email), None)
-                    if cliente_logado and cliente_logado.fazer_login(email, senha):
-                        while True:
-                            print(f"\n--- Menu Cliente ({cliente_logado.nome}) ---")
-                            print("1. Ver perfil")
-                            print("2. Adicionar Saldo")
-                            print("3. Comprar Jogo")
-                            print("4. Ver meus jogos")
-                            print("0. Voltar")
-                            opc = input("Escolha uma opção: ")
 
-                            if opc == '1':
-                                cliente_logado.imprimir_perfil()
-                                print(f'Saldo: R${cliente_logado.saldo:.2f}')
-                            elif opc == '2':
-                                try:
-                                    valor = float(input("Quanto quer adicionar ao saldo? "))
-                                    cliente_logado.adicionar_saldo(valor)
-                                except ValueError:
-                                    print("Valor inválido.")
-                            elif opc == '3':
-                                print("\n--- Compra de Jogos ---")          
-                                if lojas_registradas == []:
-                                    print("\nNenhuma loja cadastrada, não é possivel comprar um jogo.\n")
-                                else:
-                                    print("\n--- Lojas ---")
-                                    for loja in lojas_registradas:
-                                        print(f"{loja.nome}, ID: {loja.id_loja}")
-                                    loja = int(input("Digite o ID da loja onde deseja comprar: "))
-                                    if not any(u for u in lojas_registradas if u.id_loja == loja):
-                                        print("Loja nao encontrada.")
-                                    else:
-                                        loja = next((u for u in lojas_registradas if u.id_loja == loja), None)
-                                        if isinstance(loja, Loja):
-                                            if(loja.jogos_estoque == {}):
-                                                print("Nenhum jogo cadastrado na loja.")
-                                            else:
-                                                loja.imprimir_jogos_estoque()
-                                                nome_jogo = input("Nome do jogo para comprar: ")
-                                                if not any(j for j in loja.jogos_estoque if j.nome == nome_jogo):
-                                                    print("Jogo nao encontrado.")
-                                                else:
-                                                    qtd = input("Qual quantidade?: ")
-                                                    jogo = next((j for j in loja.jogos_estoque if j.nome == nome_jogo), None)
-                                                    loja.vender_para_cliente(jogo, qtd, cliente_logado)             
-                                        else:
-                                            print("Loja nao encontrada.")
-                            elif opc == '4':
-                                cliente_logado.imprimir_jogos_comprados()
-                            elif opc == '0':
-                                break
+            #busca o cliente pelo email e verifica a instância para garantir que é um objeto Cliente
+            cliente_logado = next((c for c in clientes if isinstance(c, Cliente) and c.email == email), None)
+
+            if cliente_logado: 
+                if cliente_logado.fazer_login(email, senha):
+                    while True:
+                        print(f"\n--- Menu Cliente ({cliente_logado.nome}) ---")
+                        print("1. Ver perfil")
+                        print("2. Adicionar Saldo")
+                        print("3. Comprar Jogo")
+                        print("4. Ver meus jogos")
+                        print("0. Voltar")
+                        opc = input("Escolha uma opção: ")
+
+                        if opc == '1':
+                            cliente_logado.imprimir_perfil()
+                            print(f'Saldo: R${cliente_logado.saldo:.2f}')
+                        elif opc == '2':
+                            try:
+                                valor = float(input("Quanto quer adicionar ao saldo? "))
+                                cliente_logado.adicionar_saldo(valor)
+
+                            except ValueError:
+                                print("Valor inválido. Por favor, digite um número.")
+                        elif opc == '3':
+                            print("\n--- Compra de Jogos ---")
+                            if lojas_registradas == []: 
+                                print("\nNenhuma loja cadastrada, não é possível comprar um jogo.\n")
                             else:
-                                print("Opção inválida.")
-                    else:
-                        print("Login de Cliente falhou.")
+                                print("\n--- Lojas Disponíveis ---")
+                                for loja_disp in lojas_registradas:
+                                    print(f"Nome: {loja_disp.nome}, ID: {loja_disp.id_loja}")
+                            
+                                try:
+                                    id_loja_selecionada = int(input("Digite o ID da loja onde deseja comprar: "))
+                                except ValueError:
+                                    print("ID de loja inválido. Digite um número.")
+                                    continue
 
+                                loja_alvo = next((l for l in lojas_registradas if l.id_loja == id_loja_selecionada), None)
+
+                                if loja_alvo is None:
+                                    print("Loja não encontrada.")
+                                else:
+                                    if loja_alvo.jogos_estoque == {}:
+                                        print("Nenhum jogo cadastrado nesta loja.")
+                                    else:
+                                        print(f"\n--- Jogos disponíveis na {loja_alvo.nome} ---")
+                                        loja_alvo.imprimir_jogos_estoque()
+                                    
+                                        nome_jogo_compra = input("Nome do jogo para comprar: ")
+                                    
+                                        jogo_para_comprar = None
+                                        for jogo_obj in loja_alvo.jogos_estoque.values():
+                                            if jogo_obj.nome == nome_jogo_compra:
+                                                jogo_para_comprar = jogo_obj
+                                                break
+
+                                        if jogo_para_comprar is None:
+                                            print("Jogo não encontrado na loja.")
+                                        else:
+                                            try:
+                                                qtd = int(input(f"Qual quantidade de '{jogo_para_comprar.nome}' você deseja comprar? "))
+                                                if qtd <= 0: # Validar quantidade
+                                                    print("A quantidade deve ser um número positivo.")
+                                                else:
+                                                    loja_alvo.vender_para_cliente(jogo_para_comprar, qtd, cliente_logado)
+                                            except ValueError:
+                                                print("Quantidade inválida. Por favor, digite um número inteiro.")
+                        elif opc == '4':
+                            cliente_logado.imprimir_jogos_comprados()
+                        elif opc == '0':
+                            print("Saindo do menu do cliente.")
+                            break
+                        else:
+                            print("Opção inválida. Por favor, escolha uma opção válida.")
+                else:
+                    print("Login de Cliente falhou. Email ou senha incorretos.")
+            else:
+                print("Cliente não encontrado.")
         elif opcao_menu == '6':  # Funcionário
             if funcionarios == []:
                 print("\nNenhum funcionário cadastrado, não é possivel entrar.\n")
@@ -580,23 +623,11 @@ if __name__ == "__main__":
                             elif opc == '2':
                                 minha_loja.imprimir_jogos_estoque()
                             elif opc == '3':
-                                print("\nAdicionando jogo na loja:\n")
-                                nome_jogo = input("Nome do jogo: ")
-                                plataforma = input("Plataforma: ")
-                                preco = float(input("Preço de custo para a loja: "))
-                                tipo_jogo = input("Tipo (digital/fisico): ")
-                                qtd = int(input("Quantidade: "))
-
-                                novo_jogo = None
-                                if tipo_jogo.lower() == "digital":
-                                    tamanho_gb = float(input("Tamanho em GB: "))
-                                    novo_jogo = JogoDigital(nome_jogo, plataforma, preco, tamanho_gb)
-                                elif tipo_jogo.lower() == "fisico":
-                                    novo_jogo = JogoFisico(nome_jogo, plataforma, preco)
-                                else:
-                                    print("Tipo inválido.")
-                                if novo_jogo:
+                                novo_jogo,qtd = minha_loja.adicionar_jogo()
+                                if novo_jogo != None:
                                     minha_loja.adicionar_jogo_estoque(novo_jogo, qtd)
+                                else:
+                                    print("Erro ao adicionar jogo.")
                             elif opc == '0':
                                 break
                             else:
@@ -623,6 +654,7 @@ if __name__ == "__main__":
                             print("3. Aprovar desconto em jogo")
                             print("4. Ver saldo da loja")
                             print("5. Ver historico de vendas")
+                            print("6. Adicionar jogo para o estoque da Loja")
                             print("0. Voltar")
                             opc = input("Escolha uma opção: ")
 
@@ -650,28 +682,18 @@ if __name__ == "__main__":
                                 print(f'Saldo da Loja: R${minha_loja.saldo:.2f}')
                             elif opc == '5':
                                 minha_loja.imprimir_historico()
+                            elif opc == '6':
+                                novo_jogo,qtd = minha_loja.adicionar_jogo()
+                                if novo_jogo != None:
+                                    minha_loja.adicionar_jogo_estoque(novo_jogo, qtd)
+                                else:
+                                    print("Erro ao adicionar jogo.")
                             elif opc == '0':
                                 break
                             else:
                                 print("Opção inválida.")
                     else:
                         print("Login de Gerente falhou.")
-
-        elif opcao_menu == '8':  # Menu da loja (Admin)
-            while True:
-                print("\n--- Menu da Loja (Admin) ---")
-                print("1. Ver estoque")
-                print("2. Ver saldo da loja")
-                print("0. Voltar")
-                opc = input("Escolha uma opção: ")
-                if opc == '1':
-                    minha_loja.imprimir_jogos_estoque()
-                elif opc == '2':
-                    print(f'Saldo da Loja: R${minha_loja.saldo:.2f}')
-                elif opc == '0':
-                    break
-                else:
-                    print("Opção inválida.")
 
         elif opcao_menu == '0':
             print("Saindo do sistema. Até mais!")
