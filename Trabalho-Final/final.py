@@ -10,11 +10,6 @@ class Logar(abc.ABC):
     def fazer_login(self, email, senha):
         pass
 
-class Vendavel(abc.ABC): # Interface para Jogos (que podem ser vendidos)
-    @abc.abstractmethod
-    def calcular_preco_final(self):
-        pass
-
 # --- Classes de Jogo ---
 class Jogo():
     def __init__(self, nome, plataforma, preco):
@@ -50,17 +45,12 @@ class Jogo():
     def __str__(self):
         return f'Nome: {self.nome} | Plataforma: {self.plataforma} | Preço: R${self.preco:.2f}'
 
-    def obter_info(self):
-        return f"Título: {self.nome}, Plataforma: {self.plataforma}, Preço: R${self.preco:.2f}"
-
-    def calcular_preco_final(self): 
-        return self.preco
 
 class JogoDigital(Jogo): 
     def __init__(self, nome, plataforma, preco, tamanho_gb):
         super().__init__(nome, plataforma, preco)
         self._tamanho_gb = tamanho_gb
-
+        
     @property
     def tamanho_gb(self):
         return self._tamanho_gb
@@ -71,14 +61,6 @@ class JogoDigital(Jogo):
 class JogoFisico(Jogo):
     def __init__(self, nome, plataforma, preco):
         super().__init__(nome, plataforma, preco)
-
-    def decrementar_estoque(self):
-        if self.estoque_unidades <= 0:
-            print(f"Erro: Estoque físico de {self.nome} esgotado.")
-            return False
-        self.estoque_unidades -= 1
-        print(f"Estoque físico de {self.nome} decrementado.")
-        return True
 
 # --- Classes de Pessoa e Funções ---
 class Pessoa(): 
@@ -219,8 +201,14 @@ class Gerente(Funcionario):
         super().__init__(id_pessoa, nome, email, senha, cargo, salario, minha_loja)
     
     def aprovar_desconto(self, jogo, percentual):
-        print(f'Gerente {self.nome} aprovou desconto de {percentual}% para {jogo.nome}.')
-        return jogo.aplicar_desconto(percentual)
+        if 0 <= percentual <= 100:
+            desconto = jogo.preco * (percentual / 100)
+            jogo.preco -= desconto
+            print(f"Desconto de {percentual}% aplicado em '{jogo.nome}'. Novo preço: R${jogo.preco:.2f}")
+        else:
+            print("Percentual fora do intervalo permitido.")
+
+
     
 class Loja(): 
     def __init__(self, id_loja, nome, endereco, telefone, saldo_inicial=0.0):
@@ -229,110 +217,125 @@ class Loja():
         self._endereco = endereco
         self._telefone = telefone
         self._saldo = saldo_inicial 
-        self._jogos_estoque = {} 
+        self._jogos_digitais = {}  
+        self._jogos_fisicos = {}    
         self._funcionarios = []
         self._historico = []
-    
+
     @property
-    def id_loja(self):
+    def id_loja(self): 
         return self._id_loja
     @id_loja.setter
-    def id_loja(self, value):
+    def id_loja(self, value): 
         self._id_loja = value
+
     @property
-    def nome(self):
+    def nome(self): 
         return self._nome
     @nome.setter
-    def nome(self, value):
+    def nome(self, value): 
         self._nome = value
 
     @property
-    def endereco(self):
+    def endereco(self): 
         return self._endereco
     @endereco.setter
-    def endereco(self, value):
+    def endereco(self, value): 
         self._endereco = value
 
     @property
-    def telefone(self):
+    def telefone(self): 
         return self._telefone
     @telefone.setter
-    def telefone(self, value):
+    def telefone(self, value): 
         self._telefone = value
 
     @property
-    def saldo(self):
+    def saldo(self): 
         return self._saldo
     @saldo.setter
     def saldo(self, value):
-        if value < 0:
-            print("Aviso: Saldo da loja não pode ser negativo. Ajustado para 0.")
-            self._saldo = 0.0
-        else:
-            self._saldo = value
+        self._saldo = value
 
     @property
-    def jogos_estoque(self):
-        return self._jogos_estoque
-    @jogos_estoque.setter
-    def jogos_estoque(self, value):
-        self._jogos_estoque = value
+    def jogos_digitais(self): 
+        return self._jogos_digitais
     @property
-    def funcionarios(self):
+    def jogos_fisicos(self): 
+        return self._jogos_fisicos
+
+    @property
+    def funcionarios(self): 
         return self._funcionarios
     @funcionarios.setter
-    def funcionarios(self, value):
+    def funcionarios(self, value): 
         self._funcionarios = value
         
     def imprimir_jogos_estoque(self):
-        if self.jogos_estoque == {}:
-            print('Nenhum jogo cadastrado no estoque da loja.\n')
+        if not self.jogos_digitais and not self.jogos_fisicos:
+            print("Nenhum jogo cadastrado no estoque.")
             return
-        print('\n--- Jogos em Estoque na Loja ---')
-        for jogo, quantidade in self.jogos_estoque.items():
-            print(f'Título: {jogo.nome} | Plataforma: {jogo.plataforma} | Preço: R${jogo.preco:.2f} | Estoque: {quantidade}')
+
+        print("\n--- Jogos Digitais ---")
+        for jogo, qtd in self.jogos_digitais.items():
+            print(f'{jogo} | Chaves disponíveis: {qtd}')
+
+        print("\n--- Jogos Físicos ---")
+        for jogo, qtd in self.jogos_fisicos.items():
+            print(f'{jogo} | Estoque: {qtd}')
 
     def adicionar_jogo_estoque(self, jogo, quantidade):
-        if jogo in self.jogos_estoque:
-            self.jogos_estoque[jogo] += quantidade
+        if isinstance(jogo, JogoDigital):
+            estoque = self.jogos_digitais
+        elif isinstance(jogo, JogoFisico):
+            estoque = self.jogos_fisicos
         else:
-            self.jogos_estoque[jogo] = quantidade
-        print(f'Jogo "{jogo.nome}" adicionado ao estoque da loja. Estoque atual: {self.jogos_estoque[jogo]}\n')
+            print("Tipo de jogo desconhecido.")
+            return
+
+        estoque[jogo] = estoque.get(jogo, 0) + quantidade
+        print(f'Jogo "{jogo.nome}" adicionado ao estoque. Total: {estoque[jogo]} unidades.\n')
 
     def remover_jogo_estoque(self, jogo, quantidade):
-        if jogo not in self.jogos_estoque:
-            print('Erro: Jogo não cadastrado no estoque da loja.\n')
+        if isinstance(jogo, JogoDigital):
+            estoque = self.jogos_digitais
+        elif isinstance(jogo, JogoFisico):
+            estoque = self.jogos_fisicos
+        else:
+            print("Tipo de jogo inválido.")
             return False
-        if self.jogos_estoque[jogo] < quantidade:
-            print(f'Erro: Quantidade ({quantidade}) indisponível em estoque para "{jogo.nome}". Disponível: {self.jogos_estoque[jogo]}.\n')
+
+        if jogo not in estoque or estoque[jogo] < quantidade:
+            print("Estoque insuficiente ou jogo não encontrado.")
             return False
-        
-        self.jogos_estoque[jogo] -= quantidade
-        if self.jogos_estoque[jogo] == 0:
-            del self.jogos_estoque[jogo]
+
+        estoque[jogo] -= quantidade
+        if estoque[jogo] == 0:
+            del estoque[jogo]
             print(f'Jogo "{jogo.nome}" esgotado e removido do estoque.\n')
         else:
-            print(f'{quantidade} cópia(s) de "{jogo.nome}" removida(s) do estoque. Restante: {self.jogos_estoque[jogo]}.\n')
+            print(f'{quantidade} unidade(s) removida(s) de "{jogo.nome}". Restante: {estoque[jogo]}.\n')
         return True
     
     def vender_para_cliente(self, jogo, quantidade, cliente):
-        """A Loja vende jogos para um Cliente."""
         if not isinstance(cliente, Cliente):
             print("Erro: O comprador não é um Cliente válido.")
             return False
-        
-        if jogo not in self.jogos_estoque or self.jogos_estoque[jogo] < quantidade:
-            print(f"Erro: Jogo '{jogo.nome}' indisponível ou quantidade ({quantidade}) não em estoque da loja.")
+
+        estoque = self.jogos_digitais if isinstance(jogo, JogoDigital) else self.jogos_fisicos
+
+        if jogo not in estoque or estoque[jogo] < quantidade:
+            print(f"Erro: Jogo '{jogo.nome}' indisponível ou quantidade insuficiente.")
             return False
-        
-        if cliente.comprar(jogo, quantidade): 
-            self.saldo += (jogo.preco * quantidade) 
-            self.remover_jogo_estoque(jogo, quantidade) 
-            
-            print(f"Loja vendeu {quantidade} cópia(s) de '{jogo.nome}' para {cliente.nome}. Saldo da Loja: R${self.saldo:.2f}.\n")
+
+        if cliente.comprar(jogo, quantidade):
+            self.saldo += (jogo.preco * quantidade)
+            self.remover_jogo_estoque(jogo, quantidade)
+            print(f"Venda realizada: {quantidade}x '{jogo.nome}' para {cliente.nome}")
             self._historico.append((jogo.nome, quantidade, cliente.nome))
             return True
         return False
+    
     def adicionar_jogo(self):
         print("\nAdicionando jogo na loja\n")
         nome_jogo = input("Nome do jogo: ")
@@ -353,6 +356,17 @@ class Loja():
             return novo_jogo,qtd
         else:
             return None
+    def buscar_jogo_por_nome(self, nome, tipo):
+        tipo = tipo.lower()
+        if tipo == "digital":
+            for jogo in self.jogos_digitais:
+                if jogo.nome == nome:
+                    return jogo
+        elif tipo == "fisico":
+            for jogo in self.jogos_fisicos:
+                if jogo.nome == nome:
+                    return jogo
+        return None
     def adicionar_funcionario(self, funcionario):
         self.funcionarios.append(funcionario)
     def imprimir_historico(self):
@@ -368,11 +382,6 @@ Logar.register(Gerente)
 # Classes que implementam Compravel
 Compravel.register(Loja)
 Compravel.register(Cliente)
-
-# Classes que implementam Vendavel
-Vendavel.register(Jogo)
-Vendavel.register(JogoDigital)
-Vendavel.register(JogoFisico)
 
 #Listas de Clientes, Funcionários e Lojas
 clientes = []
@@ -562,31 +571,57 @@ if __name__ == "__main__":
                                 if loja_alvo is None:
                                     print("Loja não encontrada.")
                                 else:
-                                    if loja_alvo.jogos_estoque == {}:
-                                        print("Nenhum jogo cadastrado nesta loja.")
-                                    else:
-                                        print(f"\n--- Jogos disponíveis na {loja_alvo.nome} ---")
-                                        loja_alvo.imprimir_jogos_estoque()
-                                    
-                                        nome_jogo_compra = input("Nome do jogo para comprar: ")
-                                    
-                                        jogo_para_comprar = None
-                                        for jogo_obj in loja_alvo.jogos_estoque.values():
-                                            if jogo_obj.nome == nome_jogo_compra:
-                                                jogo_para_comprar = jogo_obj
-                                                break
+                                    tipo = input('Vai comprar jogo digital ou físico? [digital/fisico]: ').strip().lower()
 
-                                        if jogo_para_comprar is None:
-                                            print("Jogo não encontrado na loja.")
+                                    if tipo == 'digital':
+                                        if not loja_alvo.jogos_digitais:
+                                            print('A loja não possui jogos digitais disponíveis.')
                                         else:
-                                            try:
-                                                qtd = int(input(f"Qual quantidade de '{jogo_para_comprar.nome}' você deseja comprar? "))
-                                                if qtd <= 0: # Validar quantidade
-                                                    print("A quantidade deve ser um número positivo.")
-                                                else:
-                                                    loja_alvo.vender_para_cliente(jogo_para_comprar, qtd, cliente_logado)
-                                            except ValueError:
-                                                print("Quantidade inválida. Por favor, digite um número inteiro.")
+                                            print(f"\n--- Jogos Digitais disponíveis na {loja_alvo.nome} ---")
+                                            for jogo, qtd in loja_alvo.jogos_digitais.items():
+                                                print(f'{jogo.nome} | Plataforma: {jogo.plataforma} | Preço: R${jogo.preco:.2f} | Chaves: {qtd}')
+                                            
+                                            nome_jogo = input("Nome do jogo para comprar: ")
+                                            jogo = next((j for j in loja_alvo.jogos_digitais if j.nome.lower() == nome_jogo.lower()), None)
+
+                                            if not jogo:
+                                                print("Jogo não encontrado.")
+                                            else:
+                                                try:
+                                                    qtd = int(input(f"Quantidade de '{jogo.nome}' que deseja comprar: "))
+                                                    if qtd <= 0:
+                                                        print("A quantidade deve ser positiva.")
+                                                    else:
+                                                        loja_alvo.vender_para_cliente(jogo, qtd, cliente_logado)
+                                                except ValueError:
+                                                    print("Quantidade inválida.")
+                                    
+                                    elif tipo == 'fisico':
+                                        if not loja_alvo.jogos_fisicos:
+                                            print('A loja não possui jogos físicos disponíveis.')
+                                        else:
+                                            print(f"\n--- Jogos Físicos disponíveis na {loja_alvo.nome} ---")
+                                            for jogo, qtd in loja_alvo.jogos_fisicos.items():
+                                                print(f'{jogo.nome} | Plataforma: {jogo.plataforma} | Preço: R${jogo.preco:.2f} | Estoque: {qtd}')
+                                            
+                                            nome_jogo = input("Nome do jogo para comprar: ")
+                                            jogo = next((j for j in loja_alvo.jogos_fisicos if j.nome.lower() == nome_jogo.lower()), None)
+
+                                            if not jogo:
+                                                print("Jogo não encontrado.")
+                                            else:
+                                                try:
+                                                    qtd = int(input(f"Quantidade de '{jogo.nome}' que deseja comprar: "))
+                                                    if qtd <= 0:
+                                                        print("A quantidade deve ser positiva.")
+                                                    else:
+                                                        loja_alvo.vender_para_cliente(jogo, qtd, cliente_logado)
+                                                except ValueError:
+                                                    print("Quantidade inválida.")
+                                    
+                                    else:
+                                        print("Tipo inválido. Digite 'digital' ou 'fisico'.")
+
                         elif opc == '4':
                             cliente_logado.imprimir_jogos_comprados()
                         elif opc == '0':
@@ -664,12 +699,12 @@ if __name__ == "__main__":
                                 minha_loja.imprimir_jogos_estoque()
                             elif opc == '3':
                                 nome_jogo = input("Nome do jogo: ")
-                                if not minha_loja.jogos_estoque:
+                                tipo_jogo = input("Tipo do jogo (digital ou fisico): ").strip().lower()
+
+                                if minha_loja.jogos_digitais == {} and minha_loja.jogos_fisicos == {}:
                                     print("Nenhum jogo cadastrado no estoque da loja.")
-                                elif not any(j for j in minha_loja.jogos_estoque if j.nome == nome_jogo):
-                                    print("Jogo nao cadastrado no estoque da loja.")
-                                else:
-                                    jogo = next((j for j in minha_loja.jogos_estoque if j.nome == nome_jogo), None)
+                                elif tipo_jogo == "digital":
+                                    jogo = next((j for j in minha_loja.jogos_digitais if j.nome.lower() == nome_jogo.lower()), None)
                                     if jogo:
                                         try:
                                             perc = float(input("Percentual de desconto: "))
@@ -677,7 +712,20 @@ if __name__ == "__main__":
                                         except ValueError:
                                             print("Percentual inválido.")
                                     else:
-                                        print("Jogo não encontrado.")
+                                        print("Jogo digital não encontrado.")
+                                elif tipo_jogo == "fisico":
+                                    jogo = next((j for j in minha_loja.jogos_fisicos if j.nome.lower() == nome_jogo.lower()), None)
+                                    if jogo:
+                                        try:
+                                            perc = float(input("Percentual de desconto: "))
+                                            gerente_logado.aprovar_desconto(jogo, perc)
+                                        except ValueError:
+                                            print("Percentual inválido.")
+                                    else:
+                                        print("Jogo físico não encontrado.")
+                                else:
+                                    print("Tipo inválido. Digite 'digital' ou 'fisico'.")
+
                             elif opc == '4':
                                 print(f'Saldo da Loja: R${minha_loja.saldo:.2f}')
                             elif opc == '5':
