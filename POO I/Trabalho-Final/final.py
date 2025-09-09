@@ -271,6 +271,10 @@ class Loja():
     @funcionarios.setter
     def funcionarios(self, value): 
         self._funcionarios = value
+    @property
+    def historico(self):
+        return self._historico
+        
         
     def imprimir_jogos_estoque(self):
         if not self.jogos_digitais and not self.jogos_fisicos:
@@ -368,11 +372,20 @@ class Loja():
         try:
             print("\nAdicionando jogo na loja\n")
             nome_jogo = input("Nome do jogo: ").lower()
+            if not nome_jogo.strip():
+                print('Nome do jogo nao pode ser vazio\n')
+                return None,0
             plataforma = input("Plataforma: ").lower()
+            if not plataforma.strip():
+                print("Plataforma nao pode ser vazio\n")
+                return None,0
             if plataforma == 'pc': 
                 tipo_jogo_str = 'digital'
             else:
                 tipo_jogo_str = input("Tipo de jogo (digital/fisico): ").lower()
+            if not tipo_jogo_str.strip():
+                print("Tipo de jogo nao pode ser vazio\n")
+                return None,0
             preco = float(input("Preco de custo para a loja: "))
             if preco <= 0:
                 print("Erro: O preco de custo deve ser maior que zero.")
@@ -690,6 +703,7 @@ if __name__ == "__main__":
                         opc = input("Escolha uma opcao: ")
 
                         if opc == '1':
+                            print('\n')
                             cliente_logado.imprimir_perfil()
                             print(f'Saldo: R${cliente_logado.saldo:.2f}')
                         elif opc == '2':
@@ -778,6 +792,7 @@ if __name__ == "__main__":
                                     print("Tipo invalido. Digite 'digital' ou 'fisico'.")
 
                         elif opc == '4':
+                            print('\n')
                             cliente_logado.imprimir_jogos_comprados()
                         elif opc == '0':
                             print("Saindo do menu do cliente.")
@@ -824,6 +839,7 @@ if __name__ == "__main__":
                         opc = input("Escolha uma opcao: ")
 
                         if opc == '1':
+                            print('\n')
                             func_logado.imprimir_perfil()
                         elif opc == '2':
                             if not minha_loja.jogos_digitais and not minha_loja.jogos_fisicos:
@@ -896,6 +912,7 @@ if __name__ == "__main__":
                         opc = input("Escolha uma opcao: ")
 
                         if opc == '1':
+                            print('\n')
                             gerente_logado.imprimir_perfil()
                         elif opc == '2':
                             if not minha_loja.jogos_digitais and not minha_loja.jogos_fisicos:
@@ -946,10 +963,10 @@ if __name__ == "__main__":
                         elif opc == '4':
                             print(f'Saldo da Loja: R${minha_loja.saldo:.2f}')
                         elif opc == '5':                      
-                            if not minha_loja.historico_vendas: 
+                            if not minha_loja.historico: 
                                 print('Nao ha historico de vendas para esta loja.')
                             else:
-                                minha_loja.imprimir_historico_vendas() 
+                                minha_loja.imprimir_historico() 
                         elif opc == '6':
                             novo_jogo, qtd = minha_loja.adicionar_jogo()
                             if novo_jogo:
